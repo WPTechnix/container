@@ -1,0 +1,11 @@
+parameters:
+    phpVersion:
+        min: 80000
+        max: 80410
+    tmpDir: /tmp/.phpstan
+    level: 8
+    paths:
+        - src
+
+includes:
+    - vendor/phpstan/phpstan-strict-rules/rules.neon

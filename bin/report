@@ -1,0 +1,85 @@
+#!/bin/bash
+
+# Default values
+max_lines=50
+max_chars=2000
+append=0
+silent=0
+output_file=""
+
+# Parse arguments for report.sh
+while [[ "$#" -gt 0 ]]; do
+    case "$1" in
+        --append)
+            append=1
+            shift
+            ;;
+        --silent)
+            silent=1
+            shift
+            ;;
+        --max-lines=*)
+            max_lines="${1#*=}"
+            shift
+            ;;
+        --max-chars=*)
+            max_chars="${1#*=}"
+            shift
+            ;;
+        --help)
+            echo "Usage: $0 [--append] [--silent] [--max-lines=N] [--max-chars=N] <output_file> -- <command> [args...]"
+            exit 0
+            ;;
+        --)
+            shift
+            break
+            ;;
+        *)
+            if [[ -z "$output_file" ]]; then
+                output_file="$1"
+                shift
+            else
+                echo "[ERROR] Unknown argument: $1"
+                exit 1
+            fi
+            ;;
+    esac
+done
+
+# ? Fail early if no output file provided
+if [[ -z "$output_file" ]]; then
+    echo "[ERROR] Missing output file before --"
+    echo "Usage: $0 [options] <output_file> -- <command> [args...]"
+    exit 1
+fi
+
+# ? Fail early if no command passed
+if [[ "$#" -eq 0 ]]; then
+    echo "[ERROR] No command provided after --"
+    exit 1
+fi
+
+command=("$@")
+
+# Capture command output
+output="$("${command[@]}" 2>&1)"
+status=$?
+
+line_count=$(echo "$output" | wc -l)
+char_count=$(echo "$output" | wc -c)
+
+if [ "$line_count" -gt "$max_lines" ] || [ "$char_count" -gt "$max_chars" ]; then
+    if [ "$append" -eq 1 ]; then
+        echo "$output" >> "$output_file"
+    else
+        echo "$output" > "$output_file"
+    fi
+
+    if [ "$silent" -ne 1 ]; then
+        echo "[INFO] Output too long, written to $output_file"
+    fi
+else
+    echo "$output"
+fi
+
+exit $status

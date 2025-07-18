@@ -1,0 +1,61 @@
+{
+  "name": "wptechnix/container",
+  "type": "library",
+  "description": "A PSR-11 compliant dependency injection container with support for singletons, factories, array-based argument bindings, autowiring, decorators, service tagging, and static analysis-friendly generics.",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "WPTechnix",
+      "email": "developers@wptechnix.com"
+    }
+  ],
+  "minimum-stability": "stable",
+  "require": {
+    "php": ">=8.0",
+    "psr/container": "^2.0"
+  },
+  "require-dev": {
+    "phpunit/phpunit": "^9.6",
+    "phpstan/phpstan": "^2.1",
+    "phpstan/phpstan-strict-rules": "^2.0",
+    "squizlabs/php_codesniffer": "^3",
+    "phpcompatibility/php-compatibility": "*"
+  },
+  "autoload": {
+    "psr-4": {
+      "WPTechnix\\Container\\": "src/"
+    }
+  },
+  "autoload-dev": {
+    "psr-4": {
+      "WPTechnix\\Container\\Tests\\Unit\\": "tests/Unit/"
+    }
+  },
+  "scripts": {
+    "mkdir-reports": [
+      "mkdir -p reports"
+    ],
+
+    "fix:phpcbf": "vendor/bin/phpcbf",
+    "lint:phpcs": [
+      "@mkdir-reports",
+      "./bin/report './reports/phpcs.txt' -- vendor/bin/phpcs --report=full"
+    ],
+    "lint:phpstan": [
+      "@mkdir-reports",
+      "./bin/report './reports/phpstan.txt' -- vendor/bin/phpstan analyse --memory-limit=2G --error-format=table"
+    ],
+    "lint": [
+      "@fix:phpcbf",
+      "@lint:phpcs",
+      "@lint:phpstan"
+    ],
+    "test:phpunit": [
+      "@mkdir-reports",
+      "XDEBUG_MODE=coverage ./bin/report 'reports/phpunit.txt' -- vendor/bin/phpunit --testdox --colors=always --coverage-html=reports/coverage"
+    ],
+    "test":  [
+      "@test:phpunit"
+    ]
+  }
+}

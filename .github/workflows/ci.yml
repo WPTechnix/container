@@ -1,0 +1,86 @@
+# .github/workflows/ci.yml
+
+name: Continuous Integration
+
+on:
+  push:
+    branches: [main, 'release/**']
+  pull_request:
+    branches: [main, 'release/**']
+
+jobs:
+  lint:
+    name: Code Style (PHPCS)
+    runs-on: ubuntu-latest
+    if: always()  # Run on both PR and push
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Required for diff
+
+      - name: Setup PHP (8.0)
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.0
+          tools: composer
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Run PHPCS on changed files
+        if: github.event_name == 'pull_request'
+        run: |
+          CHANGED_FILES=$(git diff --name-only origin/main...HEAD -- '*.php' || echo '')
+          if [[ -n "$CHANGED_FILES" ]]; then
+            echo "$CHANGED_FILES" | xargs ./vendor/bin/phpcs --colors --no-cache --report=checkstyle | cs2pr
+          else
+            echo "No PHP files changed. Skipping PHPCS."
+          fi
+
+      - name: Run PHPCS full (on push)
+        if: github.event_name != 'pull_request'
+        run: ./vendor/bin/phpcs --colors --no-cache
+
+  static-analysis:
+    name: Static Analysis (PHPStan)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP (8.4)
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.4
+          tools: composer
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Run PHPStan
+        run: ./vendor/bin/phpstan analyse --no-progress --error-format=github
+
+  unit-tests:
+    name: Unit Tests (PHPUnit)
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        php-version: [8.0, 8.1, 8.2, 8.3, 8.4]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP (${{ matrix.php-version }})
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php-version }}
+          tools: composer
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Run PHPUnit
+        run: ./vendor/bin/phpunit --testdox --colors=always --no-coverage --do-not-cache-result
